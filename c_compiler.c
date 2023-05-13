@@ -1,112 +1,103 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+#define MAX_TOKEN_LEN 128
 
 typedef enum {
-    TOKEN_INTEGER,
-    TOKEN_PLUS,
-    TOKEN_MINUS,
-    TOKEN_STAR,
-    TOKEN_SLASH,
-    TOKEN_LPAREN,
-    TOKEN_RPAREN,
-    TOKEN_EOF,
-} TokenKind;
+    TK_PLUS,
+    TK_MINUS,
+    TK_ASTERISK,
+    TK_SLASH,
+    TK_INTLIT,
+    TK_EOF
+} token_t;
 
 typedef struct {
-    TokenKind kind;
-    const char* start;
-    int length;
-    int value;
-} Token;
+    token_t type;
+    char str[MAX_TOKEN_LEN];
+    int len;
+} token;
 
-typedef struct {
-    const char* start;
-    int length;
-} Tokenizer;
+int pos = 0;
 
-void error(const char* message) {
-    fprintf(stderr, "%s\n", message);
+char input[] = "1+2*3";
+
+token next_token() {
+    char ch;
+    token tok = { 0 };
+    while (input[pos] != '\0') {
+        ch = input[pos];
+        pos++;
+
+        if (ch == '+') {
+            tok.type = TK_PLUS;
+            strcpy(tok.str, "+");
+            tok.len = 1;
+            break;
+        } else if (ch == '-') {
+            tok.type = TK_MINUS;
+            strcpy(tok.str, "-");
+            tok.len = 1;
+            break;
+        } else if (ch == '*') {
+            tok.type = TK_ASTERISK;
+            strcpy(tok.str, "*");
+            tok.len = 1;
+            break;
+        } else if (ch == '/') {
+            tok.type = TK_SLASH;
+            strcpy(tok.str, "/");
+            tok.len = 1;
+            break;
+        } else if (isdigit(ch)) {
+            int i = 0;
+            tok.type = TK_INTLIT;
+            while (isdigit(ch)) {
+                tok.str[i++] = ch;
+                ch = input[pos];
+                pos++;
+            }
+            tok.len = i;
+            break;
+        }
+    }
+    if (tok.type == 0) {
+        tok.type = TK_EOF;
+    }
+    return tok;
+}
+
+void error(char* msg) {
+    fprintf(stderr, "Error: %s\n", msg);
     exit(1);
 }
 
-void tokenizer_init(Tokenizer* tokenizer, const char* input) {
-    tokenizer->start = input;
-    tokenizer->length = strlen(input);
-}
+int main(int argc, char** argv) {
+    token tok;
+    int left, right, result;
+    left = right = result = 0;
 
-int tokenizer_next(Tokenizer* tokenizer, Token* token) {
-    while (tokenizer->start < tokenizer->start + tokenizer->length) {
-        switch (*tokenizer->start) {
-            case '+':
-                token->kind = TOKEN_PLUS;
-                token->start = tokenizer->start;
-                token->length = 1;
-                tokenizer->start++;
-                return 1;
-            case '-':
-                token->kind = TOKEN_MINUS;
-                token->start = tokenizer->start;
-                token->length = 1;
-                tokenizer->start++;
-                return 1;
-            case '*':
-                token->kind = TOKEN_STAR;
-                token->start = tokenizer->start;
-                token->length = 1;
-                tokenizer->start++;
-                return 1;
-            case '/':
-                token->kind = TOKEN_SLASH;
-                token->start = tokenizer->start;
-                token->length = 1;
-                tokenizer->start++;
-                return 1;
-            case '(':
-                token->kind = TOKEN_LPAREN;
-                token->start = tokenizer->start;
-                token->length = 1;
-                tokenizer->start++;
-                return 1;
-            case ')':
-                token->kind = TOKEN_RPAREN;
-                token->start = tokenizer->start;
-                token->length = 1;
-                tokenizer->start++;
-                return 1;
-            default:
-                if (*tokenizer->start >= '0' && *tokenizer->start <= '9') {
-                    token->kind = TOKEN_INTEGER;
-                    token->start = tokenizer->start;
-                    token->length = 1;
-                    token->value = *tokenizer->start - '0';
-                    tokenizer->start++;
-                    while (*tokenizer->start >= '0' && *tokenizer->start <= '9') {
-                        token->length++;
-                        token->value *= 10;
-                        token->value += *tokenizer->start - '0';
-                        tokenizer->start++;
-                    }
-                    return 1;
-                } else {
-                    error("Invalid token");
-                }
-        }
+    tok = next_token();
+    if (tok.type != TK_INTLIT) {
+        error("Expected integer literal");
     }
-    token->kind = TOKEN_EOF;
-    token->start = tokenizer->start;
-    token->length = 0;
+    sscanf(tok.str, "%d", &left);
+
+    tok = next_token();
+    if (tok.type != TK_PLUS) {
+        error("Expected +");
+    }
+
+    tok = next_token();
+    if (tok.type != TK_INTLIT) {
+        error("Expected integer literal");
+    }
+    sscanf(tok.str, "%d", &right);
+
+    result = left + right;
+    printf("%d\n", result);
+
     return 0;
 }
-
-int main(int argc, const char* argv[]) {
-    if (argc != 2) {
-        error("Usage: compiler <input-file>");
-    }
-
-    FILE* file = fopen(argv[1], "r");
-    if (file == NULL) {
-        error("Cannot open input file");
-    }
-
-    fseek(file
