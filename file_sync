@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Source and destination directories
+src_dir="/path/to/source/dir"
+dst_dir="/path/to/destination/dir"
+
+# Synchronization options
+options="-avh --delete"
+
+# Conflict resolution strategy
+strategy="overwrite"
+
+# Function to sync files
+function sync_files() {
+  echo "Syncing files from $src_dir to $dst_dir..."
+  case "$strategy" in
+    "skip")
+      rsync $options --ignore-existing "$src_dir/" "$dst_dir/"
+      ;;
+    "overwrite")
+      rsync $options --update "$src_dir/" "$dst_dir/"
+      ;;
+    "backup")
+      backup_dir="$dst_dir/backup_$(date +%Y%m%d%H%M%S)"
+      mkdir -p "$backup_dir"
+      rsync $options --update --backup --backup-dir="$backup_dir" "$src_dir/" "$dst_dir/"
+      ;;
+    *)
+      echo "Unknown conflict resolution strategy: $strategy"
+      exit 1
+      ;;
+  esac
+  echo "Done syncing files."
+}
+
+# Prompt user for conflict resolution strategy
+read -p "Select conflict resolution strategy [skip/overwrite/backup]: " strategy
+
+# Sync files
+sync_files
