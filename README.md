@@ -10,4 +10,6 @@ How to run the program for Linux Process Monitor-
 
 gcc -o Linux_Process_Monitor.c
 
-How to run the program for registering the device with the 
+How to run the program for registering the device with the kernel-
+
+gcc -o reg_device.c
